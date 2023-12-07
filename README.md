@@ -174,4 +174,61 @@ check_file  client_file  final_check
 1. Без автоматического создания при поднятии ВМ
 2. с автоматическим созданием nfs
 
+Проверка со скриптами:
+
+Сервер:
+
+denis@DDA-VirtualBox:~/Lab6_nfs$ vagrant ssh nfss
+[vagrant@nfss ~]$ sudo -i
+[root@nfss ~]# exportfs -s 
+/srv/share  192.168.56.11/32(sync,wdelay,hide,no_subtree_check,sec=sys,rw,secure,root_squash,no_all_squash)
+[root@nfss ~]# cd /srv/share/upload/
+[root@nfss upload]# systemctl status nfs
+● nfs-server.service - NFS server and services
+   Loaded: loaded (/usr/lib/systemd/system/nfs-server.service; enabled; vendor preset: disabled)
+   Active: active (exited) since Thu 2023-12-07 10:23:08 UTC; 7min ago
+  Process: 3674 ExecStartPost=/bin/sh -c if systemctl -q is-active gssproxy; then systemctl reload gssproxy ; fi (code=exited, status=0/SUCCESS)
+  Process: 3657 ExecStart=/usr/sbin/rpc.nfsd $RPCNFSDARGS (code=exited, status=0/SUCCESS)
+  Process: 3656 ExecStartPre=/usr/sbin/exportfs -r (code=exited, status=0/SUCCESS)
+ Main PID: 3657 (code=exited, status=0/SUCCESS)
+   CGroup: /system.slice/nfs-server.service
+
+Dec 07 10:23:07 nfss systemd[1]: Starting NFS server and services...
+Dec 07 10:23:08 nfss systemd[1]: Started NFS server and services.
+[root@nfss upload]# systemctl status firewalld
+● firewalld.service - firewalld - dynamic firewall daemon
+   Loaded: loaded (/usr/lib/systemd/system/firewalld.service; enabled; vendor preset: enabled)
+   Active: active (running) since Thu 2023-12-07 10:23:03 UTC; 7min ago
+     Docs: man:firewalld(1)
+ Main PID: 3498 (firewalld)
+   CGroup: /system.slice/firewalld.service
+           └─3498 /usr/bin/python2 -Es /usr/sbin/firewalld --nofork --nopid
+
+Dec 07 10:23:02 nfss systemd[1]: Starting firewalld - dynamic firewall daemon...
+Dec 07 10:23:03 nfss systemd[1]: Started firewalld - dynamic firewall daemon.
+Dec 07 10:23:03 nfss firewalld[3498]: WARNING: AllowZoneDrifting is enabled...w.
+Dec 07 10:23:06 nfss firewalld[3498]: WARNING: AllowZoneDrifting is enabled...w.
+Hint: Some lines were ellipsized, use -l to show in full.
+[root@nfss upload]# showmount -a 192.168.56.10
+All mount points on 192.168.56.10:
+192.168.56.11:/srv/share
+
+Клиент:
+
+denis@DDA-VirtualBox:~/Lab6_nfs$ vagrant ssh nfsc
+[vagrant@nfsc ~]$ sudo -i
+[root@nfsc ~]# mount | grep mnt
+systemd-1 on /mnt type autofs (rw,relatime,fd=46,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=26177)
+192.168.56.10:/srv/share/ on /mnt type nfs (rw,relatime,vers=3,rsize=32768,wsize=32768,namlen=255,hard,proto=udp,timeo=11,retrans=3,sec=sys,mountaddr=192.168.56.10,mountvers=3,mountport=20048,mountproto=udp,local_lock=none,addr=192.168.56.10)
+[root@nfsc ~]# cd /mnt
+[root@nfsc mnt]# ls
+upload
+[root@nfsc mnt]# showmount -a 192.168.56.10
+All mount points on 192.168.56.10:
+192.168.56.11:/srv/share
+[root@nfsc mnt]# cd /mnt/upload
+[root@nfsc upload]# ls
+[root@nfsc upload]# touch final_check
+[root@nfsc upload]# ls
+final_check
 
